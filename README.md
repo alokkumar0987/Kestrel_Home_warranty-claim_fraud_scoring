@@ -42,7 +42,7 @@ If step 3 is skipped, the service still starts. `/health` reports `model_missing
 | `submission-form.md` | Answers to the submission form |
 | `notebooks/` | Full analysis (outputs cleared, see "Data") |
 
-`outputs/` is not committed (policy §10). The submitted `predictions.csv`, the review list and the memo with the outlets named are in the shared Drive folder linked in `submission-form.md`.
+`outputs/` is not committed (policy §10). The submitted `predictions.csv` is at the Drive link in `submission-form.md`. The review list and the memo with the outlets named are for Kestrel only; step 3 regenerates the review list.
 
 ## The API
 
