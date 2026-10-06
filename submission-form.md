@@ -93,7 +93,7 @@ Context for the money: fraud runs at about Rs 45,000 a month. Since the 1 May 20
 
 Screen recording: https://drive.google.com/file/d/1-iIPGy1Poy1sxpd0aKfXTaw7QCxfY6mE/view?usp=drivesdk
 
-[TODO: link to the Drive folder with `predictions.csv`, the Jul–Sep review list and the memo with the seven outlets named, which policy §10 keeps out of the public repository.]
+[  https://drive.google.com/file/d/1CE1y5apUxA3dtZ0-992k2lz5yhCcdPM8/view?usp=drivesdk    with `predictions.csv`, the Jul–Sep review list and the memo with the seven outlets named, which policy §10 keeps out of the public repository.]
 
 ## Someone picks this up on Monday and you are unreachable. The three things they need to know.
 
