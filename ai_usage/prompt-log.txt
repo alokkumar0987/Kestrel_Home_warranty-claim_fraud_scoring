@@ -1,0 +1,696 @@
+# Prompt log: the prompts I sent to Claude Code during this task, from the moment the logging hook was set
+# up (the few prompts before it, about setting up the hook itself, are not here)
+#
+# Logged automatically by a UserPromptSubmit hook (.claude/hooks/on-prompt.ps1), one entry per prompt,
+# with the time (IST). Published so the answer to "What did you use AI for?" can be checked.
+# Edits from the raw log: editor notices about which file was open are removed, and partner and claim
+# IDs are replaced with [ID removed] (ops policy §10). Nothing else is changed.
+#
+
+2026-10-05 18:56 | hello
+2026-10-05 18:58 | /init
+2026-10-05 19:09 | read the data folder
+2026-10-05 19:22 | use this notebook  and import library and load all csvs file
+2026-10-05 19:29 | understand the target
+2026-10-05 19:37 | okay continue data clearning
+2026-10-05 19:42 | yes feature engineering and  understand the relationship between train.csv , partners.csv, products.cs
+2026-10-05 19:51 | to verify this ritu's hypothesis :my own view is that the newer parters are the problem ?and but let the data say it?? lets lets for this hypothesis ?fraud rate and also chi square test ??
+
+<pasted_content id="2568">
+Statistical test bhi kar sakte ho
+Fraud = binary outcome hai, tenure groups categorical bana diye ΓåÆ Chi-square test of independence appropriate starting point ho sakta hai.
+Ya better, if tenure continuous hai:
+Logistic regression:
+Agar ╬▓Γéü statistically significant hai aur negative hai, to longer tenure associated with lower fraud odds hai.
+</pasted_content id="2568">
+2026-10-05 19:53 | to verify this ritu's hypothesis :my own view is that the newer parters are the problem ?and but let the data say it?? lets lets for this hypothesis ?fraud rate and also chi square test ?? to create seprate notebook inside experimeent ?.ipynb
+
+<pasted_content id="5d0d">
+Statistical test bhi kar sakte ho
+Fraud = binary outcome hai, tenure groups categorical bana diye ΓåÆ Chi-square test of independence appropriate starting point ho sakta hai.
+Ya better, if tenure continuous hai:
+Logistic regression:
+Agar ╬▓Γéü statistically significant hai aur negative hai, to longer tenure associated with lower fraud odds hai.
+</pasted_content id="5d0d">
+2026-10-05 19:59 | case study main :Ritu_Hypothesis_New_Partners.ipynb. ??kya output aaya ?
+2026-10-05 20:01 | okay good write in notebook ,to make point
+2026-10-05 20:04 | Ritu_Hypothesis_New_Partners.ipynb keep this noteek  net and clean , do not make noisy  and write now in structured formated
+2026-10-05 20:08 | now lets continue with D:\task_2_V3\.claude\Experiment\Kestrel_Home.ipynb with feature engineering ??
+2026-10-05 20:20 | <ide_selection>The user selected the lines 1 to 6 from d:\task_2_V3\.claude\Experiment\Kestrel_Home.ipynb:
+### 6.8 Feature engineering summary
+
+- **30 features** go into modelling: 25 numeric, 5 categorical. All are known at claim submission time; no future information is used.
+- **Strongest signals:** partner fraud history, the post-May new-partner interaction, partner tenure and recent partner claim volume.
+- **Signal drift after May 2026:** claim-amount features lose their power. The model must be **validated on post-May claims (MayΓÇôJun 2026)**, the period that looks like the test set, not on a random split.
+- **Next step:** modelling. Train on claims before May 2026, validate on MayΓÇôJun 2026, and judge by **Rs of fraud caught in the top 40 claims a month**, not accuracy.
+
+This may or may not be related to the current task.</ide_selection>
+MayΓÇôJune 2026 ke claims pe validate karna hoga right
+2026-10-05 20:21 | okay
+2026-10-05 20:27 | claculate this PR-AUC ?
+2026-10-05 20:29 | PR curve  okay?
+2026-10-05 20:33 | The KPI is accuracy - the board wants to see a number above 97%??explore the data and notebook and identify where is problem ?hidden buy or mismatch table error ????
+2026-10-05 20:36 | okay please fix this identified problem :C1 + C2 + C3
+2026-10-05 20:41 | okay
+2026-10-05 20:44 | test data?what is accuracy?
+2026-10-05 20:46 | show flow of this notebook ?D:\task_2_V3\.claude\Experiment\Kestrel_Home.ipynb in ascii digram
+2026-10-05 20:49 | <pasted_content id="5d0d">
+Review the current Kestrel modelling pipeline before proceeding to final submission.
+
+Do not generate the final submission yet.
+
+### 1. Diagnose Fold A
+
+Fold A currently reports ROC-AUC Γëê 0.13 when training on claims before 2026-05-01 and validating on MayΓÇôJune.
+
+Investigate whether this is:
+
+- genuine regime inversion caused by the May 2026 policy shift, or
+- a technical error.
+
+Explicitly verify:
+
+- positive-class probability direction
+- `is_fraud` label encoding
+- ROC-AUC calculation
+- train/validation date filters
+- categorical preprocessing
+- point-in-time historical feature construction
+- score ordering
+
+If the low AUC is genuine, retain it as evidence of severe regime shift and explain why rather than hiding it.
+
+### 2. Audit final Platt calibration
+
+Current plan says:
+
+- train logistic model on all labelled claims through 2026-06-30
+- fit Platt calibration using June validation
+
+This is not an independent calibration setup because June labels are already included in model training.
+
+Do not keep this design.
+
+Evaluate whether calibration is actually needed for the submission. Since the business objective is ranking Top-40 claims/month and the submission requires a `score`, calibration is probably unnecessary.
+
+Unless the task explicitly requires calibrated probabilities, prefer the raw model fraud-risk score.
+
+### 3. Audit post-May 5x weighting
+
+Verify where the `5x` post-May weighting came from.
+
+Run a small controlled comparison:
+
+- 1x
+- 2x
+- 3x
+- 5x
+
+Compare on the fixed temporal validation framework.
+
+Do not continue tuning against June after selecting the value.
+
+Document the final choice.
+
+### 4. Quantify uncertainty
+
+June contains only 22 fraud cases.
+
+Do not describe June Top-40 capture as a precise population estimate.
+
+Report the observed counts and amounts directly.
+
+Where useful, include confidence intervals for proportions.
+
+### 5. Compare Logistic vs XGBoost more deeply
+
+Current June result:
+
+- Logistic: 14/22 fraud captured, Γé╣19.8k
+- XGBoost: 14/22 fraud captured, Γé╣19.8k
+
+Calculate:
+
+- PR-AUC
+- Precision@40
+- Top-40 overlap
+- Top-40 score correlation
+- Top-80 results
+- Top-120 results
+- monthly results
+- Γé╣ fraud caught per claim reviewed
+
+Determine whether XGBoost provides additional ranking value.
+
+### 6. Add monthly validation table
+
+Produce a model comparison table with:
+
+| Model | Month | Top-K | Fraud caught | Precision@K | Γé╣ fraud caught | Γé╣/review |
+|---|---|---:|---:|---:|---:|---:|
+
+Use K=40.
+
+Include May and June separately.
+
+### 7. Freeze the experiment
+
+Once the model, feature set and post-May weighting are selected:
+
+- stop tuning against the June holdout
+- document the final configuration
+- retrain the final model using all eligible labelled data through 2026-06-30
+- score the JulyΓÇôSeptember test set
+
+### 8. Final test ranking
+
+Create:
+
+- Top 40 claims for July 2026
+- Top 40 claims for August 2026
+- Top 40 claims for September 2026
+
+Write:
+
+`outputs/review_list_jul_sep_2026.csv`
+
+with useful columns:
+
+- claim_id
+- submitted_at
+- month
+- score
+- rank_in_month
+- claim_amount_inr
+- partner_id
+- partner_is_new
+- partner_tenure_days
+- relevant risk features
+
+Do not include any target or future investigation outcome.
+
+### 9. Submission
+
+Create:
+
+`outputs/submission.csv`
+
+matching `sample_submission.csv` exactly.
+
+Validate:
+
+- same row count as test
+- same claim IDs
+- no duplicates
+- no missing scores
+- correct ordering
+- exact column names
+- no accidental index column
+
+### 10. Final report
+
+Update the modelling report with:
+
+- validation strategy
+- Fold A regime-shift finding
+- Fold B / June result
+- model comparison
+- post-May weighting rationale
+- why accuracy is not sufficient
+- Top-40 economics
+- Ritu hypothesis conclusion
+- limitations
+- final model choice
+
+Do not claim that the model "proves" newer partners cause fraud. Use association language.
+
+Do not use the JulyΓÇôSeptember test set for model selection.
+</pasted_content id="5d0d">
+2026-10-05 21:11 | We are working with Kestrel Home Appliances, a Pune company selling air fryers, mixer-grinders, water purifiers, robot vacuums, cooktops, fans and heaters direct to consumers online and through about 380 service-partner outlets. Kestrel sells a 12-month standard warranty (24 months on some lines) and an optional Kestrel Shield plan.
+
+Ritu Deshpande, Head of D2C Operations, sent this:
+
+"Warranty fraud is up and the board has noticed. I want a model that flags fraudulent claims before we pay them. The KPI is accuracy - the board wants to see a number above 97% - and I'd like it live soon. We have fifteen months of claims with the investigation outcome. My own view is that the newer partners are the problem, but let the data say it."What you get
+train.csv - past warranty claims with is_fraud from the investigation team.
+test_unlabelled.csv - the most recent claims without it.
+partners.csv, products.csv - reference data.
+ops-policy.pdf, email-thread.txt, README.txt, sample_submission.csv.
+2026-10-05 21:13 | Predictions: predictions.csv for every row of test_unlabelled.csv, in the shape of sample_submission.csv. One row per claim_id with a score: higher means more likely fraudulent. We score it against outcomes you do not have. Before you send it, write down in the form what you expect it to score and why.
+2026-10-05 22:52 | add on top notebook cell to dowwnload library
+2026-10-05 22:56 | if ($prompt -match '(?i)password|api[_\s-]?key') {
+    [Console]::Error.WriteLine("Blocked: prompt looks like it contains a secret (password / API key).")
+    exit 2
+}?check this?
+2026-10-05 22:57 | hello
+2026-10-05 22:58 | <pasted_content id="5d0d">
+We are working with Kestrel Home Appliances, a Pune company selling air fryers, mixer-grinders, water purifiers, robot vacuums, cooktops, fans and heaters direct to consumers online and through about 380 service-partner outlets. Kestrel sells a 12-month standard warranty (24 months on some lines) and an optional Kestrel Shield plan.
+
+Ritu Deshpande, Head of D2C Operations, sent this:
+
+"Warranty fraud is up and the board has noticed. I want a model that flags fraudulent claims before we pay them. The KPI is accuracy - the board wants to see a number above 97% - and I'd like it live soon. We have fifteen months of claims with the investigation outcome. My own view is that the newer partners are the problem, but let the data say it."
+
+What you get
+train.csv - past warranty claims with is_fraud from the investigation team.
+test_unlabelled.csv - the most recent claims without it.
+partners.csv, products.csv - reference data.
+ops-policy.pdf, email-thread.txt, README.txt, sample_submission.csv.
+What you deliver
+Predictions: predictions.csv for every row of test_unlabelled.csv, in the shape of sample_submission.csv. One row per claim_id with a score: higher means more likely fraudulent. We score it against outcomes you do not have. Before you send it, write down in the form what you expect it to score and why.
+A working service. Any stack. One endpoint that takes a single record as JSON and returns your model's output plus the reasons a Kestrel employee would read, and one screen that calls it. It must start from your README on a clean machine without a paid API key; if your product uses a model API, it must still start and fail politely without one. A small thing that runs beats a large thing that does not.
+Evidence that it works - and how often it does not. We are not telling you what shape this takes.
+A one-page memo to Ritu. Not technical. The decision, the number, the rupees, what she should do next week.
+A screen recording of at most three minutes walking through what you tried, what you changed and what you threw away. No slides.
+The submission form (submission-form.md). An unfilled form is an incomplete submission.
+On AI tools
+Use whatever you want - coding assistants, chat models, APIs, agents - to build, and inside the product itself where it earns its place. Bring your own keys; we do not provide credits. Tell us honestly what you used, what it cost and what you discarded. That answer only ever helps you.
+
+On the brief itself
+This is what a real client email looks like. It is not a specification. There is no one to ask during the window: everything you need is in the pack, including the email thread and the policy document. If something is still unclear, decide, and write down what you decided and why.
+
+1d 16h left
+
+Files
+email-thread.txt
+ops-policy.pdf
+partners.csv
+products.csv
+README.txt
+sample_submission.csv
+test_unlabelled.csv
+train.csv
+What did you build, and what business outcome does it move?** State the number and the money.*
+What score do you expect predictions.csv to get on the hidden outcomes, on which metric, and why that metric?** Say how you estimated it. We compare this with the real score.*
+How do you know it works?** Sample size, how you checked, error rate, and the kind of case it gets wrong.*
+Did you change, narrow, or push back on the client's ask?** What, when, and why. **[can only raise your score]***
+What is wrong with what you are handing us, or with the data we handed you?** Be specific: bugs, shortcuts, columns you did not trust, rows that looked wrong. **[can only raise your score]***
+What did you deliberately leave out, and why that rather than something else?*
+Anything you built or found that nobody asked for?*
+What did you use AI for?** Which tools and models, where they helped, where they wasted your time, what you threw away. Link your three-minute screen recording here.*
+Your Public Google Drive Link
+
+Someone picks this up on Monday and you are unreachable.** The three things they need to know.*
+Honest hours spent.** One number.*
+Github Repo Link*
+Please upload your Github Repo URL (Public)
+
+What does one prediction cost, and what would a month cost at Kestrel's volume (about 750 warranty claims a month)?** Show the arithmetic. If you used no paid calls, say so.*
+</pasted_content id="5d0d">
+2026-10-05 23:58 | do research on it and explore all code base and idenfy the issues and act as senior developer who have 5yoe and recontrucct folder and files and code quality and comment
+2026-10-06 11:30 | act as senior hiring manager and against this task and evaluate the project ?
+
+<pasted_content id="5d0d">
+We are working with Kestrel Home Appliances, a Pune company selling air fryers, mixer-grinders, water purifiers, robot vacuums, cooktops, fans and heaters direct to consumers online and through about 380 service-partner outlets. Kestrel sells a 12-month standard warranty (24 months on some lines) and an optional Kestrel Shield plan.
+
+Ritu Deshpande, Head of D2C Operations, sent this:
+
+"Warranty fraud is up and the board has noticed. I want a model that flags fraudulent claims before we pay them. The KPI is accuracy - the board wants to see a number above 97% - and I'd like it live soon. We have fifteen months of claims with the investigation outcome. My own view is that the newer partners are the problem, but let the data say it."
+
+What you get
+train.csv - past warranty claims with is_fraud from the investigation team.
+test_unlabelled.csv - the most recent claims without it.
+partners.csv, products.csv - reference data.
+ops-policy.pdf, email-thread.txt, README.txt, sample_submission.csv.
+What you deliver
+Predictions: predictions.csv for every row of test_unlabelled.csv, in the shape of sample_submission.csv. One row per claim_id with a score: higher means more likely fraudulent. We score it against outcomes you do not have. Before you send it, write down in the form what you expect it to score and why.
+A working service. Any stack. One endpoint that takes a single record as JSON and returns your model's output plus the reasons a Kestrel employee would read, and one screen that calls it. It must start from your README on a clean machine without a paid API key; if your product uses a model API, it must still start and fail politely without one. A small thing that runs beats a large thing that does not.
+Evidence that it works - and how often it does not. We are not telling you what shape this takes.
+A one-page memo to Ritu. Not technical. The decision, the number, the rupees, what she should do next week.
+A screen recording of at most three minutes walking through what you tried, what you changed and what you threw away. No slides.
+The submission form (submission-form.md). An unfilled form is an incomplete submission.
+On AI tools
+Use whatever you want - coding assistants, chat models, APIs, agents - to build, and inside the product itself where it earns its place. Bring your own keys; we do not provide credits. Tell us honestly what you used, what it cost and what you discarded. That answer only ever helps you.
+
+On the brief itself
+This is what a real client email looks like. It is not a specification. There is no one to ask during the window: everything you need is in the pack, including the email thread and the policy document. If something is still unclear, decide, and write down what you decided and why.
+
+1d 0h left
+
+Files
+email-thread.txt
+ops-policy.pdf
+partners.csv
+products.csv
+README.txt
+sample_submission.csv
+test_unlabelled.csv
+train.csv
+What did you build, and what business outcome does it move?** State the number and the money.*
+What score do you expect predictions.csv to get on the hidden outcomes, on which metric, and why that metric?** Say how you estimated it. We compare this with the real score.*
+How do you know it works?** Sample size, how you checked, error rate, and the kind of case it gets wrong.*
+Did you change, narrow, or push back on the client's ask?** What, when, and why. **[can only raise your score]***
+What is wrong with what you are handing us, or with the data we handed you?** Be specific: bugs, shortcuts, columns you did not trust, rows that looked wrong. **[can only raise your score]***
+What did you deliberately leave out, and why that rather than something else?*
+Anything you built or found that nobody asked for?*
+What did you use AI for?** Which tools and models, where they helped, where they wasted your time, what you threw away. Link your three-minute screen recording here.*
+Your Public Google Drive Link
+
+Someone picks this up on Monday and you are unreachable.** The three things they need to know.*
+Honest hours spent.** One number.*
+Github Repo Link*
+Please upload your Github Repo URL (Public)
+
+What does one prediction cost, and what would a month cost at Kestrel's volume (about 750 warranty claims a month)?** Show the arithmetic. If you used no paid calls, say so.*
+</pasted_content id="5d0d">
+2026-10-06 11:35 | predictions.csv + expected score	9/10	Metric chuna (PR-AUC) aur kyun chuna, ye bataya. Range di (0.20ΓÇô0.35). June ke 0.37 ko teen saaf kaaranon se neeche adjust kiya. Downside scenario bhi likha. Mujhe yahi chahiye??? what problem here ?how to reach on 10/10?
+2026-10-06 11:36 | okay update
+2026-10-06 11:46 | test dataset mai accuracy kitna h?
+2026-10-06 11:51 | task kya h ?banaye kya ho?
+2026-10-06 11:54 | check karo kitna sahi h?
+
+<pasted_content id="5d0d">
+We are working with Kestrel Home Appliances, a Pune company selling air fryers, mixer-grinders, water purifiers, robot vacuums, cooktops, fans and heaters direct to consumers online and through about 380 service-partner outlets. Kestrel sells a 12-month standard warranty (24 months on some lines) and an optional Kestrel Shield plan.
+
+Ritu Deshpande, Head of D2C Operations, sent this:
+
+"Warranty fraud is up and the board has noticed. I want a model that flags fraudulent claims before we pay them. The KPI is accuracy - the board wants to see a number above 97% - and I'd like it live soon. We have fifteen months of claims with the investigation outcome. My own view is that the newer partners are the problem, but let the data say it."
+
+What you get
+train.csv - past warranty claims with is_fraud from the investigation team.
+test_unlabelled.csv - the most recent claims without it.
+partners.csv, products.csv - reference data.
+ops-policy.pdf, email-thread.txt, README.txt, sample_submission.csv.
+What you deliver
+Predictions: predictions.csv for every row of test_unlabelled.csv, in the shape of sample_submission.csv. One row per claim_id with a score: higher means more likely fraudulent. We score it against outcomes you do not have. Before you send it, write down in the form what you expect it to score and why.
+A working service. Any stack. One endpoint that takes a single record as JSON and returns your model's output plus the reasons a Kestrel employee would read, and one screen that calls it. It must start from your README on a clean machine without a paid API key; if your product uses a model API, it must still start and fail politely without one. A small thing that runs beats a large thing that does not.
+Evidence that it works - and how often it does not. We are not telling you what shape this takes.
+A one-page memo to Ritu. Not technical. The decision, the number, the rupees, what she should do next week.
+A screen recording of at most three minutes walking through what you tried, what you changed and what you threw away. No slides.
+The submission form (submission-form.md). An unfilled form is an incomplete submission.
+</pasted_content id="5d0d">
+
+?
+2026-10-06 12:02 | <pasted_content id="5d0d">
+Check karte waqt teen kamzoriyan dikhi
+Ek kaaran kisi kaam ka nahi. Kaaran ki list mein "Product: Robot Vacuum." aata hai. Employee ko isse ye nahi pata chalta ki ye product risk kyun badhata hai.
+Har response mein model ke 30 feature naam aate hain. Response bina wajah lamba ho jaata hai, aur employee ke kisi kaam ka nahi.
+"High-risk" example ka score 0.9999 hai. Claim inspect ho chuka hai aur note mein "Motor winding failure confirmed" likha hai. Score itna sirf partner [ID removed] ki fraud history ki wajah se hai.
+Ranking ke liye ye sahi hai.
+Lekin dekhne wale ko lagega ki model "100% sure" hai, jabki score probability nahi hai.
+Recording mein ise samjhaana achha rahega.
+Teeno chhoti cheezein hain, submission rokne wali nahi. Kahiye toh pehli do abhi theek kar doon.
+</pasted_content id="5d0d">
+
+????
+2026-10-06 12:10 | hello
+2026-10-06 12:11 | folder structure kya h ?
+2026-10-06 12:13 | add architure in readme file ?ascii diagram
+2026-10-06 12:19 | and thing i want to u ?act as seniour developer and u have 10yoe and update this project to read the each file of each line of code to understand the whole project context and make sure everything is working and stay in scope as task given okay ??Task 2 V3
+Kestrel Home ΓÇö Warranty Claim Review (Variant C)We are working with Kestrel Home Appliances, a Pune company selling air fryers, mixer-grinders, water purifiers, robot vacuums, cooktops, fans and heaters direct to consumers online and through about 380 service-partner outlets. Kestrel sells a 12-month standard warranty (24 months on some lines) and an optional Kestrel Shield plan.
+
+Ritu Deshpande, Head of D2C Operations, sent this:
+
+"Warranty fraud is up and the board has noticed. I want a model that flags fraudulent claims before we pay them. The KPI is accuracy - the board wants to see a number above 97% - and I'd like it live soon. We have fifteen months of claims with the investigation outcome. My own view is that the newer partners are the problem, but let the data say it."
+
+What you get
+train.csv - past warranty claims with is_fraud from the investigation team.
+test_unlabelled.csv - the most recent claims without it.
+partners.csv, products.csv - reference data.
+ops-policy.pdf, email-thread.txt, README.txt, sample_submission.csv.
+What you deliver
+Predictions: predictions.csv for every row of test_unlabelled.csv, in the shape of sample_submission.csv. One row per claim_id with a score: higher means more likely fraudulent. We score it against outcomes you do not have. Before you send it, write down in the form what you expect it to score and why.
+A working service. Any stack. One endpoint that takes a single record as JSON and returns your model's output plus the reasons a Kestrel employee would read, and one screen that calls it. It must start from your README on a clean machine without a paid API key; if your product uses a model API, it must still start and fail politely without one. A small thing that runs beats a large thing that does not.
+Evidence that it works - and how often it does not. We are not telling you what shape this takes.
+A one-page memo to Ritu. Not technical. The decision, the number, the rupees, what she should do next week.
+A screen recording of at most three minutes walking through what you tried, what you changed and what you threw away. No slides.
+The submission form (submission-form.md). An unfilled form is an incomplete submission.
+On AI tools
+Use whatever you want - coding assistants, chat models, APIs, agents - to build, and inside the product itself where it earns its place. Bring your own keys; we do not provide credits. Tell us honestly what you used, what it cost and what you discarded. That answer only ever helps you.
+
+On the brief itself
+This is what a real client email looks like. It is not a specification. There is no one to ask during the window: everything you need is in the pack, including the email thread and the policy document. If something is still unclear, decide, and write down what you decided and why.
+
+
+
+Files
+email-thread.txt
+ops-policy.pdf
+partners.csv
+products.csv
+README.txt
+sample_submission.csv
+test_unlabelled.csv
+train.csv
+What did you build, and what business outcome does it move?** State the number and the money.*
+What score do you expect predictions.csv to get on the hidden outcomes, on which metric, and why that metric?** Say how you estimated it. We compare this with the real score.*
+How do you know it works?** Sample size, how you checked, error rate, and the kind of case it gets wrong.*
+Did you change, narrow, or push back on the client's ask?** What, when, and why. **[can only raise your score]***
+What is wrong with what you are handing us, or with the data we handed you?** Be specific: bugs, shortcuts, columns you did not trust, rows that looked wrong. **[can only raise your score]***
+What did you deliberately leave out, and why that rather than something else?*
+Anything you built or found that nobody asked for?*
+What did you use AI for?** Which tools and models, where they helped, where they wasted your time, what you threw away. Link your three-minute screen recording here.*
+Your Public Google Drive Link
+
+Someone picks this up on Monday and you are unreachable.** The three things they need to know.*
+Honest hours spent.** One number.*
+Github Repo Link*
+Please upload your Github Repo URL (Public)
+
+What does one prediction cost, and what would a month cost at Kestrel's volume (about 750 warranty claims a month)?** Show the arithmetic. If you used no paid calls, say so.*
+2026-10-06 12:31 | now check code quality ?each files of project
+2026-10-06 12:43 | check quality ?D:\task_2_V3\submission-form.md??
+2026-10-06 12:47 | What did you use AI for?** Which tools and models, where they helped, where they wasted your time, what you threw away. Link your three-minute screen recording here.*?? write anser this in seprate script.md
+2026-10-06 12:50 | and i say take time and understand whole conversation and project context and write better script.md ye file
+2026-10-06 18:21 | run the project
+2026-10-06 18:26 | The KPI is accuracy - the board wants to see a number above 97% ???here requirement is 97percent above ?but our current accuracy is??
+2026-10-06 18:28 | okay check code quality and folder structure ?
+2026-10-06 18:43 | i want add this update correctly and this extra information and  D:\task_2_V3\Analysis_&_planning and 
+
+<pasted_content id="5d0d">
+Yes. Keep it simple, honest, and close to what you actually did. Don't make it sound like AI built everything for you.
+
+1. Form answer ΓÇö ready to paste
+
+What did you use AI for?
+
+I used two AI tools during this task: ChatGPT and Claude Code with Claude Opus 5.5.
+
+First, I read the task myself and wrote down the requirements and my initial plan. I used ChatGPT when I did not understand some technical words, statistical concepts, or parts of the task. For example, I used it to understand how to test the client's hypothesis about newer partners and fraud.
+
+Then I used Claude Code with Claude Opus 5.5 inside VS Code. I gave it access to the project files and used it for:
+
+- understanding the dataset and different CSV files;
+- data cleaning;
+- feature engineering;
+- statistical experiments;
+- building and testing models;
+- validation;
+- debugging;
+- building the API and simple UI;
+- documentation.
+
+Where AI helped: It saved time when exploring the data, writing experiments, debugging code, and checking my approach.
+
+Where AI wasted time: Sometimes the first approach was not correct or gave overly optimistic results. I had to ask Claude to investigate and audit the validation.
+
+What I threw away: I discarded approaches such as random train/test splitting, unnecessary calibration, and model/weighting choices that did not improve the final temporal validation or business objective. I also removed approaches that were harder to explain.
+
+I did not use an LLM inside the final prediction service. The final product runs using the trained model and deterministic reasoning, so it does not require a paid API key.
+
+Recording: [PASTE YOUR GOOGLE DRIVE LINK HERE]
+
+
+---
+
+2. 3-minute recording script ≡ƒÄÑ
+
+Isko almost exactly bol sakte ho:
+
+0:00ΓÇô0:25 ΓÇö Start
+
+> "For this task, I used two AI tools: ChatGPT and Claude Code with Claude Opus 5.5.
+
+Before using AI, I first read the complete task and wrote down the requirements and my initial plan in my notebook."
+
+
+
+Screen: Notebook/task brief.
+
+
+---
+
+0:25ΓÇô0:50 ΓÇö ChatGPT
+
+> "I used ChatGPT mainly for understanding.
+
+Whenever I did not understand a technical term, statistical method, or part of the task, I asked ChatGPT to explain it.
+
+For example, I used it to understand how to test the client's hypothesis that newer partners might have higher fraud."
+
+
+
+Screen: Show your ChatGPT conversation / hypothesis notebook.
+
+
+---
+
+0:50ΓÇô1:30 ΓÇö Claude Code
+
+> "After I understood the task, I moved the project into VS Code and used Claude Code with Claude Opus 5.5.
+
+I used it to read the data, understand the relationships between the CSV files, clean the data, create features, run experiments, build the model, and create the service and tests.
+
+I also used it to review the pipeline and check for possible problems."
+
+
+
+Screen: VS Code ΓåÆ CLAUDE.md ΓåÆ notebook ΓåÆ project folders.
+
+
+---
+
+1:30ΓÇô2:05 ΓÇö Where AI helped + correction
+
+> "AI saved me a lot of time, especially for data exploration, coding experiments, debugging, and testing different approaches.
+
+But I did not blindly accept the first answer.
+
+During validation, I found that one approach was giving an overly optimistic result. I asked Claude to audit the pipeline, and we found a validation problem.
+
+I corrected the validation and used a time-based validation instead of relying on a random split."
+
+
+
+Screen: Show your validation comparison / 16 ΓåÆ 14 correction if that is actually documented in your final files.
+
+
+---
+
+2:05ΓÇô2:35 ΓÇö What you threw away
+
+> "I also tried and discarded several approaches.
+
+I discarded random train-test splitting because the data has a time-based change.
+
+I also removed unnecessary calibration and some model and weighting choices when they did not improve the actual business objective.
+
+I kept the approach that was more reliable, explainable, and useful for the review process."
+
+
+
+Screen: Show your experiment/model comparison table.
+
+
+---
+
+2:35ΓÇô3:00 ΓÇö Final product
+
+> "Finally, I did not put an LLM inside the final prediction service.
+
+The final service uses the trained model and deterministic reasons, so it can run without a paid API key.
+
+Overall, I used AI to speed up exploration, implementation, debugging, and review, but I made the final decisions about what to keep and what to discard."
+
+
+
+Screen: Run your API/UI and show the final result.
+
+
+---
+
+ΓÜá∩╕Å One thing to NOT say
+
+Don't say:
+
+> Γ¥î "Claude built the complete project for me."
+
+
+
+Say:
+
+> Γ£à "I used Claude Code to help me explore, implement, test and review the project, while I made the final decisions."
+
+
+
+That distinction matters because the task explicitly asks what you tried, changed, and threw away. They are testing your judgment, not just whether you can operate an AI coding agent.
+</pasted_content id="5d0d">
+2026-10-06 18:47 | this is final check this befor submission please read the files text ?
+
+<pasted_content id="5d0d">
+Task 2 V3
+Kestrel Home ΓÇö Warranty Claim Review (Variant C)
+Deadline: 48 hours from the time you receive this.
+
+We are working with Kestrel Home Appliances, a Pune company selling air fryers, mixer-grinders, water purifiers, robot vacuums, cooktops, fans and heaters direct to consumers online and through about 380 service-partner outlets. Kestrel sells a 12-month standard warranty (24 months on some lines) and an optional Kestrel Shield plan.
+
+Ritu Deshpande, Head of D2C Operations, sent this:
+
+"Warranty fraud is up and the board has noticed. I want a model that flags fraudulent claims before we pay them. The KPI is accuracy - the board wants to see a number above 97% - and I'd like it live soon. We have fifteen months of claims with the investigation outcome. My own view is that the newer partners are the problem, but let the data say it."
+
+What you get
+train.csv - past warranty claims with is_fraud from the investigation team.
+test_unlabelled.csv - the most recent claims without it.
+partners.csv, products.csv - reference data.
+ops-policy.pdf, email-thread.txt, README.txt, sample_submission.csv.
+What you deliver
+Predictions: predictions.csv for every row of test_unlabelled.csv, in the shape of sample_submission.csv. One row per claim_id with a score: higher means more likely fraudulent. We score it against outcomes you do not have. Before you send it, write down in the form what you expect it to score and why.
+A working service. Any stack. One endpoint that takes a single record as JSON and returns your model's output plus the reasons a Kestrel employee would read, and one screen that calls it. It must start from your README on a clean machine without a paid API key; if your product uses a model API, it must still start and fail politely without one. A small thing that runs beats a large thing that does not.
+Evidence that it works - and how often it does not. We are not telling you what shape this takes.
+A one-page memo to Ritu. Not technical. The decision, the number, the rupees, what she should do next week.
+A screen recording of at most three minutes walking through what you tried, what you changed and what you threw away. No slides.
+The submission form (submission-form.md). An unfilled form is an incomplete submission.
+On AI tools
+Use whatever you want - coding assistants, chat models, APIs, agents - to build, and inside the product itself where it earns its place. Bring your own keys; we do not provide credits. Tell us honestly what you used, what it cost and what you discarded. That answer only ever helps you.
+
+On the brief itself
+This is what a real client email looks like. It is not a specification. There is no one to ask during the window: everything you need is in the pack, including the email thread and the policy document. If something is still unclear, decide, and write down what you decided and why.
+
+18h 1m left
+
+Files
+email-thread.txt
+ops-policy.pdf
+partners.csv
+products.csv
+README.txt
+sample_submission.csv
+test_unlabelled.csv
+train.csv
+What did you build, and what business outcome does it move?** State the number and the money.*
+What score do you expect predictions.csv to get on the hidden outcomes, on which metric, and why that metric?** Say how you estimated it. We compare this with the real score.*
+How do you know it works?** Sample size, how you checked, error rate, and the kind of case it gets wrong.*
+Did you change, narrow, or push back on the client's ask?** What, when, and why. **[can only raise your score]***
+What is wrong with what you are handing us, or with the data we handed you?** Be specific: bugs, shortcuts, columns you did not trust, rows that looked wrong. **[can only raise your score]***
+What did you deliberately leave out, and why that rather than something else?*
+Anything you built or found that nobody asked for?*
+What did you use AI for?** Which tools and models, where they helped, where they wasted your time, what you threw away. Link your three-minute screen recording here.*
+Your Public Google Drive Link
+
+Someone picks this up on Monday and you are unreachable.** The three things they need to know.*
+Honest hours spent.** One number.*
+Github Repo Link*
+Please upload your Github Repo URL (Public)
+
+What does one prediction cost, and what would a month cost at Kestrel's volume (about 750 warranty claims a month)?** Show the arithmetic. If you used no paid calls, say so.*
+</pasted_content id="5d0d">
+2026-10-06 23:19 | hello?
+2026-10-06 23:21 | tell me current model name ?and  research and find best algothithms for problem ?who can reach 98percent ?just research and find ?and think deeper and more
+2026-10-06 23:26 | should i add this benchmark on readme file??planning how add and where and update , explore the each file of the folder to understand the context
+2026-10-06 23:30 | okay update as to act senior applied ai enineer the project
+2026-10-06 23:43 | isolation forest better  Logistic Regression?
+2026-10-06 23:44 | okay
+2026-10-06 23:45 | project run ?
+2026-10-07 00:11 | okay
+2026-10-07 00:21 | script.md , readme, submission-form.md ?check this file ??is this updated?anything ismissing?
+2026-10-07 00:42 | . Where AI wasted my time?write this anser in sort
+2026-10-07 02:47 | my google drive [https://drive.google.com/file/d/1-iIPGy1Poy1sxpd0aKfXTaw7QCxfY6mE/view?usp=drivesdk] now andHonest hours spent.** One number.* :4 hour almost ? update this '
+2026-10-07 02:50 | delete this  now script.md file
+2026-10-07 02:52 | remaining push all on the github and fill the form right ?? and github use user alokkumar098 to push and contribution ?
+
+<pasted_content id="5d0d">
+ΓÇªor create a new repository on the command line
+echo "# Kestrel_Home_warranty-claim_fraud_scoring" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/alokkumar0987/Kestrel_Home_warranty-claim_fraud_scoring.git
+git push -u origin main
+ΓÇªor push an existing repository from the command line
+git remote add origin https://github.com/alokkumar0987/Kestrel_Home_warranty-claim_fraud_scoring.git
+git branch -M main
+git push -u origin main
+</pasted_content id="5d0d">
+
+
+2026-10-07 03:15 | improve readme file  and push again and improvemt area Layout and ascii diagram of architure complete end to end
+2026-10-07 03:19 | push this file also and update D:\task_2_V3\.claude\hooks\prompt-log.txt

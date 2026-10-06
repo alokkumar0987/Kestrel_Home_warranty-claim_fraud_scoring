@@ -207,6 +207,7 @@ Steps 1 and 2 are the same code for the batch and for a single API claim, so a c
 │   └── benchmark_algorithms.py     writes evidence/algorithm_benchmark.md (research; not used by the product)
 │
 ├── Analysis_&_planning/            handwritten requirements and plan, written before any AI tool was used
+├── ai_usage/prompt-log.txt         every prompt sent to Claude Code, timestamped (IDs removed)
 ├── memo_to_ritu.md                 one-page decision memo for the client
 ├── submission-form.md              answers to the submission form, with the Drive and GitHub links
 ├── README.md · CLAUDE.md           how to run it · guidance for coding agents working in this repo
