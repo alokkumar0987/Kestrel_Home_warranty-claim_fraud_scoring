@@ -4,6 +4,16 @@ Scores each warranty claim for fraud risk so Kestrel's investigation desk (about
 
 **No paid API or key is needed.** The model is a logistic regression that runs locally.
 
+## Results at a glance
+
+| | |
+|---|---|
+| **What it does** | Ranks every claim by fraud risk so the desk checks the riskiest 40 a month |
+| **June 2026 trial** (trained only on earlier claims) | 14 of 22 frauds in the top 40; Rs 19,765 caught, about Rs 494 per check. The 40 largest claims would catch 1 |
+| **Accuracy** | 95.2% while catching 14 frauds; flagging nothing scores 96.9%. No algorithm tested reaches 97% (`evidence/algorithm_benchmark.md`) |
+| **Expected test score** | PR-AUC about 0.27 (range 0.20–0.35); random is about 0.03 |
+| **Model** | Logistic regression on 30 point-in-time features; exact, readable reasons; no paid API |
+
 ## Run it on a clean machine
 
 Needs **Python 3.11–3.13** and the client data pack. Commands are for Windows PowerShell; on macOS/Linux use `source .venv/bin/activate`.
@@ -89,80 +99,128 @@ The client's ops policy (§10) says customer and operational data must not be pu
 
 ## Architecture
 
+End to end, from the client's data pack to the investigation desk and back. `config.py` sits under every step: policy dates, the Rs 2,000 limit, 40 reviews a month, costs, paths and modelling choices.
+
 ```
-                        Data/  (client data pack, not in the repo)
-          train.csv · test_unlabelled.csv · partners.csv · products.csv
-                                     │
-                                     ▼
- ┌──────────────────────────────────────────────────────────────────────────┐
- │ data.py      find files by suffix → drop re-submitted duplicates (keep   │
- │              first) → clean claims (serials, Y/N, descriptions, injected │
- │              text) → join partners + products                            │
- └──────────────────────────────────────────────────────────────────────────┘
-                                     │  cleaned claim history
-                                     ▼
- ┌──────────────────────────────────────────────────────────────────────────┐
- │ features.py  point-in-time features: claim · partner tenure · partner    │
- │              behaviour (30/90 days before) · partner fraud history       │
- │              (outcomes ≥ 30 days old only)                               │
- └──────────────────────────────────────────────────────────────────────────┘
-                │                                          │
-                ▼                                          ▼
- ┌─────────────────────────────────┐      ┌─────────────────────────────────┐
- │ train.py                        │      │ evaluate.py                     │
- │ model.py: logistic regression,  │      │ validation.py: train to 31 May, │
- │ post-May ×3, score correction   │      │ score June, top 40, bootstrap,  │
- │ fit on all labelled claims      │      │ staleness backtest              │
- └─────────────────────────────────┘      └─────────────────────────────────┘
-        │                    │                             │
-        ▼                    ▼                             ▼
- artifacts/model.joblib   outputs/predictions.csv   evidence/validation_report.md
- (ModelBundle: model,     outputs/review_list_...
-  threshold, history)
-        │
-        │ loaded once at startup (versioned; 503 + instructions if missing)
-        ▼
- ┌──────────────────────────────────────────────────────────────────────────┐
- │ service.py  (FastAPI)                                                    │
- │                                                                          │
- │  POST /score ──► schemas.Claim ──► data.clean_claims ──► features on     │
- │   one claim      (validate, 422)    (same code as batch)  partner history│
- │                                                           + this claim   │
- │                                                               │          │
- │  response ◄── recommendation ◄── explain.reasons ◄── model.score         │
- │  (score, rank,  (vs 40-a-month    (coefficients →                        │
- │   reasons)       threshold)        plain sentences)                      │
- │                                                                          │
- │  GET /  (static/index.html) ── calls /example and /score                 │
- │  GET /health · GET /example · GET /docs                                  │
- └──────────────────────────────────────────────────────────────────────────┘
+  CLIENT DATA PACK   Data/  (never committed: ops policy §10)
+  train.csv · test_unlabelled.csv · partners.csv · products.csv · sample_submission.csv
+                                          │
+                                          ▼
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │ 1. CLEAN                                                           data.py      │
+ │    find files by suffix → drop re-submitted claims (keep the first) →           │
+ │    normalise serials and Y/N → strip text injected into descriptions →          │
+ │    reject unknown partners/SKUs → join partners.csv + products.csv              │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+                                          │  cleaned claim history (train + test)
+                                          ▼
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │ 2. FEATURES (point-in-time)                                    features.py      │
+ │    claim: amount vs price, Rs 1,800–2,000 band, inspection, warranty used       │
+ │    partner: tenure · claims in the 30/90 days before · confirmed fraud from     │
+ │    outcomes at least 30 days old (no later outcome can leak into a claim)       │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+                                          │
+              ┌───────────────────────────┼───────────────────────────┐
+              ▼                           ▼                           ▼
+ ┌─────────────────────────┐ ┌─────────────────────────┐ ┌─────────────────────────┐
+ │ 3a. TRAIN               │ │ 3b. VALIDATE            │ │ 3c. BENCHMARK           │
+ │ train.py + model.py     │ │ evaluate.py             │ │ tools/                  │
+ │ logistic regression,    │ │ + validation.py         │ │ benchmark_algorithms.py │
+ │ post-May claims ×3,     │ │ train to 31 May, score  │ │ 12 other algorithms on  │
+ │ weight inflation        │ │ June, top 40, bootstrap,│ │ the same folds; after   │
+ │ removed (risk_scores)   │ │ staleness backtest      │ │ the freeze, evidence    │
+ └─────────────────────────┘ └─────────────────────────┘ └─────────────────────────┘
+              │                           │                           │
+              ▼                           ▼                           ▼
+ artifacts/model.joblib       evidence/                    evidence/
+ outputs/predictions.csv      validation_report.md         algorithm_benchmark.md
+ outputs/review_list_*.csv
+              │
+              │  ModelBundle loaded once at startup
+              │  (versioned; if missing, the service still starts and returns 503 + how to fix)
+              ▼
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │ 4. SERVE                                              service.py (FastAPI)      │
+ │                                                                                 │
+ │  POST /score ─► schemas.Claim ─► clean_claims ─► build_features ─► risk_scores  │
+ │  one claim      422 if invalid   same code as    partner history                │
+ │  as JSON                         the batch       + this claim                   │
+ │                                                                         │       │
+ │  response ◄── recommendation ◄── explain.reasons ◄──────────────────────┘       │
+ │  score, rank,  vs the 40-a-month  coefficients → plain sentences                │
+ │  reasons       review threshold   (grouped, never contradicting)                │
+ │                                                                                 │
+ │  GET /  screen (static/index.html) · GET /example · GET /health · GET /docs     │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+              │
+              ▼
+ ┌─────────────────────────────────────────────────────────────────────────────────┐
+ │ 5. USE                                                   investigation desk     │
+ │    review the top 40 claims a month (keep ~5 slots for random established       │
+ │    partners) → record fraud / not fraud                                         │
+ └─────────────────────────────────────────────────────────────────────────────────┘
+              │
+              │  monthly CRM export with the new outcomes → replace the files in Data/
+              └──────────────────────────► back to 1. CLEAN  (retrain every month)
 ```
 
-`config.py` sits under all of it: policy dates, the Rs 2,000 limit, 40 reviews a month, costs, paths and modelling choices. Because the service runs the same `clean_claims` and `build_features` as training, a claim scored through the API gets exactly its batch score (`tests/test_service.py` checks this).
+Steps 1 and 2 are the same code for the batch and for a single API claim, so a claim scored through the API gets exactly its batch score (`tests/test_service.py` checks this). Step 3c is evidence only: it never changes the production model.
 
 ## Layout
 
 ```
-kestrel_fraud/            the product, in pipeline order
-  config.py               paths (env-overridable), business rules, modelling choices
-  data.py                 load the data pack, clean claims (same code for batch and API)
-  features.py             point-in-time features
-  model.py                estimator, training weights, score correction, versioned ModelBundle
-  explain.py              plain-language reasons from the model's coefficients
-  validation.py           time-based split and review-desk metrics
-  train.py                CLI: train on all labelled claims, write artifacts/ and outputs/
-  evaluate.py             CLI: write evidence/validation_report.md
-  schemas.py              API request/response models (shown at /docs)
-  service.py              FastAPI app: /score, /example, /health, and the screen
-  static/index.html       the screen
-tests/                    unit tests (no data needed) + API tests
-notebooks/                analysis, outputs cleared: Kestrel_Home (end to end), Ritu_Hypothesis_New_Partners
-tools/export_notebooks.py strips outputs from working notebooks into notebooks/
-tools/benchmark_algorithms.py  writes evidence/algorithm_benchmark.md (research, not used by the product)
-evidence/                 validation report and algorithm benchmark
-memo_to_ritu.md, submission-form.md    deliverables
-Analysis_&_planning/      my handwritten requirements and plan, written before using any AI tool
-outputs/notebook/         the notebook's own copies of the outputs (checked against outputs/, never overwrite it)
+.
+├── kestrel_fraud/                  the product, in pipeline order
+│   ├── __init__.py                 package version
+│   ├── config.py                   paths (env-overridable), business rules from the policy, modelling choices
+│   ├── data.py                     load the data pack, clean claims (one code path for batch and API)
+│   ├── features.py                 point-in-time features (claim, partner behaviour, lagged fraud history)
+│   ├── model.py                    estimator, training weights, risk_scores(), versioned ModelBundle
+│   ├── explain.py                  plain-language reasons from the model's coefficients
+│   ├── validation.py               time-based split, staleness freeze, top-40 metric, bootstrap, Wilson CI
+│   ├── train.py                    CLI: train on all labelled claims → artifacts/, outputs/
+│   ├── evaluate.py                 CLI: time-based validation → evidence/validation_report.md
+│   ├── schemas.py                  API request and response models (shown at /docs)
+│   ├── service.py                  FastAPI app: /score, /example, /health, and the screen
+│   └── static/index.html           the screen
+│
+├── tests/                          38 tests: 28 unit tests on synthetic data + 10 API tests on the real pack
+│   ├── conftest.py                 synthetic partners/products, claim factory, skip rule for API tests
+│   ├── test_data.py                cleaning; bad records rejected by name
+│   ├── test_features.py            30-day label lag, no leakage from later outcomes, partner windows
+│   ├── test_model.py               score correction keeps the ranking; missing model gives a clear error
+│   ├── test_validation.py          staleness freeze, bootstrap interval
+│   ├── test_train.py               predictions file matches sample_submission.csv or training stops
+│   └── test_service.py             API reproduces predictions.csv, reasons, timezone, 422, 503
+│
+├── evidence/
+│   ├── validation_report.md        June results, error rates, cases it gets wrong, expected test score
+│   └── algorithm_benchmark.md      12 other algorithms on the same folds; can any reach 97–98% accuracy
+│
+├── notebooks/                      the analysis, outputs cleared
+│   ├── Kestrel_Home.ipynb          end to end: target, cleaning, features, validation, final model
+│   └── Ritu_Hypothesis_New_Partners.ipynb   fraud rates, chi-square, logistic regression, partner-level test
+│
+├── tools/
+│   ├── export_notebooks.py         copies working notebooks into notebooks/ with outputs stripped
+│   └── benchmark_algorithms.py     writes evidence/algorithm_benchmark.md (research; not used by the product)
+│
+├── Analysis_&_planning/            handwritten requirements and plan, written before any AI tool was used
+├── memo_to_ritu.md                 one-page decision memo for the client
+├── submission-form.md              answers to the submission form, with the Drive and GitHub links
+├── README.md · CLAUDE.md           how to run it · guidance for coding agents working in this repo
+├── requirements.txt                product, training and tests (pinned)
+├── requirements-notebook.txt       extra packages for the notebooks and the benchmark
+├── pyproject.toml                  pytest and ruff settings, package metadata
+└── .gitignore · .gitattributes     keep client data out; keep line endings consistent
+
+Not committed (git-ignored, ops policy §10):
+  Data/                             the client data pack
+  artifacts/model.joblib            trained model; embeds the cleaned claim history
+  outputs/                          predictions.csv, review_list_jul_sep_2026.csv, notebook/ (the notebook's own copies)
+  drive_upload/                     files shared privately instead of published
+  .claude/                          local agent settings and the working notebooks with outputs
 ```
 
-`train.py` and `evaluate.py` share all logic with the service through `data`, `features` and `model`, so the batch predictions and the API cannot drift apart (a test checks they agree). The notebooks are the exploratory record; the package is the source of truth.
+`train.py`, `evaluate.py` and the service share all logic through `data`, `features` and `model`, so the batch predictions and the API cannot drift apart (a test checks they agree). The notebooks are the exploratory record; the package is the source of truth.
