@@ -86,7 +86,7 @@ Context for the money: fraud runs at about Rs 45,000 a month. Since the 1 May 20
 - **Helped:** fast exploration and checks across all files; writing and re-running notebook sections; building and testing the service; catching inconsistencies between text and numbers.
 - **Wasted time / had to be corrected:** early validation was over-optimistic (instant label visibility, found in an audit and fixed); the 5× post-May weight was first picked by eye and later re-tested (3× chosen); a Platt calibration was built and then removed as not independent; the first version of the reasons showed contradicting statements and was regrouped; some shell scripting mishaps.
 - **Thrown away:** random splits, the "flag all new partners" rule, XGBoost and a rank blend, Platt calibration, the 5× weight, accuracy as a selection metric.
-- **Cost:** [TODO: what you paid for ChatGPT and Claude, e.g. subscription per month, or "free tier".]
+- **Cost:** [ ChatGPT free  and Claude subscription per month (20 doller)]
 - **Screen recording:** https://drive.google.com/file/d/1-iIPGy1Poy1sxpd0aKfXTaw7QCxfY6mE/view?usp=drivesdk
 
 ## Your Public Google Drive Link
