@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claim Risk Check</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1d2330; --muted:#5d6675; --line:#dde1e7;
+          --high:#b42318; --mid:#b54708; --low:#067647; --accent:#2f5bd3; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:18px 24px; background:var(--card); border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:20px; } header p { margin:4px 0 0; color:var(--muted); }
+  main { display:grid; grid-template-columns: minmax(300px, 420px) 1fr; gap:20px; padding:20px 24px; max-width:1200px; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; padding:16px; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px; }
+  label { display:block; font-size:13px; color:var(--muted); margin:10px 0 3px; }
+  input, select { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font:inherit; background:#fff; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .buttons { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+  button { padding:9px 14px; border-radius:6px; border:1px solid var(--line); background:#fff; font:inherit; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); width:100%; margin-top:16px; font-weight:600; }
+  .verdict { padding:16px; border-radius:8px; color:#fff; margin-bottom:14px; }
+  .verdict .score { font-size:34px; font-weight:700; } .verdict .action { font-size:17px; font-weight:600; }
+  .high { background:var(--high); } .mid { background:var(--mid); } .low { background:var(--low); }
+  .meta { color:var(--muted); font-size:13px; }
+  h3 { margin:16px 0 6px; font-size:15px; } ul { margin:0; padding-left:20px; } li { margin:4px 0; }
+  .error { color:var(--high); font-weight:600; white-space:pre-wrap; }
+  .empty { color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Warranty claim risk check</h1>
+  <p>Score one claim before it is paid. The investigation desk can review about 40 claims a month.</p>
+</header>
+<main>
+  <section class="card">
+    <div class="buttons">
+      <button type="button" onclick="loadExample('high')">Load a high-risk example</button>
+      <button type="button" onclick="loadExample('low')">Load a typical example</button>
+    </div>
+    <form id="claim" onsubmit="scoreClaim(event)">
+      <div class="row">
+        <div><label>Claim ID</label><input name="claim_id" value="NEW-CLAIM"></div>
+        <div><label>Submitted (IST)</label><input name="submitted_at" type="datetime-local" required></div>
+      </div>
+      <div class="row">
+        <div><label>Partner ID</label><input name="partner_id" placeholder="SP3004" required></div>
+        <div><label>SKU</label><input name="sku" placeholder="KH-AF-02" required></div>
+      </div>
+      <label>Product serial</label><input name="product_serial" placeholder="KH123456789" required>
+      <div class="row">
+        <div><label>Claim amount (Rs)</label><input name="claim_amount_inr" type="number" min="1" step="1" required></div>
+        <div><label>Days since purchase</label><input name="days_since_purchase" type="number" min="0" required></div>
+      </div>
+      <div class="row">
+        <div><label>Photo attached</label><select name="photo_attached"><option>Y</option><option>N</option></select></div>
+        <div><label>Partner inspected</label><select name="partner_inspected"><option>Y</option><option>N</option></select></div>
+      </div>
+      <label>Fault description</label><input name="claim_description" placeholder="water leaking" required>
+      <label>Inspector note (optional)</label><input name="inspector_note">
+      <label>Customer's earlier warranty claims</label><input name="customer_prior_claims" type="number" min="0" value="0">
+      <button class="primary" type="submit">Check risk</button>
+    </form>
+  </section>
+
+  <section class="card" id="result"><p class="empty">Load an example or fill in a claim, then press <b>Check risk</b>.</p></section>
+</main>
+
+<script>
+const form = document.getElementById("claim");
+const result = document.getElementById("result");
+
+async function loadExample(kind) {
+  let res, data;
+  try {
+    res = await fetch(`/example?kind=${kind}`);
+    data = await res.json();
+  } catch (err) {
+    return showError("Could not reach the scoring service. Is it running?");
+  }
+  if (!res.ok) return showError(data.detail || res.statusText);
+  for (const [k, v] of Object.entries(data)) {
+    if (!form.elements[k]) continue;
+    form.elements[k].value = k === "submitted_at" ? String(v).slice(0, 16) : (v ?? "");
+  }
+}
+
+async function scoreClaim(event) {
+  event.preventDefault();
+  const body = Object.fromEntries(new FormData(form).entries());
+  if (!body.inspector_note) body.inspector_note = null;
+  ["claim_amount_inr", "days_since_purchase", "customer_prior_claims"].forEach(k => body[k] = Number(body[k]));
+  result.innerHTML = '<p class="empty">Scoring…</p>';
+  try {
+    const res = await fetch("/score", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) return showError(Array.isArray(data.detail) ? data.detail.map(d => `${d.loc.at(-1)}: ${d.msg}`).join("\n") : data.detail);
+    render(data);
+  } catch (err) {
+    showError("Could not reach the scoring service. Is it running?");
+  }
+}
+
+function render(d) {
+  const band = d.risk_score >= d.review_threshold ? "high" : d.risk_score >= d.review_threshold / 3 ? "mid" : "low";
+  const list = items => items.length ? `<ul>${items.map(i => `<li>${escapeHtml(i.text)}</li>`).join("")}</ul>` : '<p class="empty">None stand out.</p>';
+  result.innerHTML = `
+    <div class="verdict ${band}">
+      <div class="score">${rankText(d.riskier_than_pct_of_recent_claims)}</div>
+      <div class="action">${escapeHtml(d.recommendation)}</div>
+    </div>
+    <p class="meta">Risk score ${d.risk_score.toFixed(3)} (a ranking, not a probability) ·
+       review threshold ${d.review_threshold.toFixed(3)} · claim ${escapeHtml(d.claim_id)}</p>
+    <h3>Why the risk is higher</h3>${list(d.reasons.raising_risk)}
+    <h3>What lowers it</h3>${list(d.reasons.lowering_risk)}
+    <p class="meta" style="margin-top:16px">${escapeHtml(d.note)}</p>`;
+}
+
+// The score ranks claims, so lead with the rank: a raw 0.9999 reads as "certain fraud"
+function rankText(pct) {
+  const top = 100 - pct;
+  return top < 1 ? "Among the riskiest 1% of recent claims" : `Riskier than ${Math.floor(pct)}% of recent claims`;
+}
+
+function showError(msg) { result.innerHTML = `<p class="error">${escapeHtml(msg)}</p>`; }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+// Default to the current local time; toISOString() alone would give UTC
+const now = new Date();
+form.elements.submitted_at.value = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+</script>
+</body>
+</html>

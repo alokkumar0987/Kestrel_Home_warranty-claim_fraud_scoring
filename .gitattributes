@@ -1,0 +1,5 @@
+# Keep line endings consistent across Windows and macOS/Linux checkouts
+* text=auto eol=lf
+*.ipynb text eol=lf
+*.pdf binary
+*.joblib binary

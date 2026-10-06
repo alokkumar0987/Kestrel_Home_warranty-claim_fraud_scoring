@@ -1,0 +1,16 @@
+# Client data: ops policy §10 forbids publishing it or uploading it to public repositories
+Data/
+# Built from the client data (model artifact embeds claim history; outputs list claims and partners)
+artifacts/
+outputs/
+# Files shared through the private Drive folder instead of the public repo (policy §10)
+drive_upload/
+# Local Claude Code settings, hooks and prompt log
+.claude/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+.ipynb_checkpoints/
